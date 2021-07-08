@@ -34,20 +34,29 @@ def divCol(d,x,y):
 # merge the tables, now x and y parameters
 futCur = pd.merge(futures, filteredCurrent , on="date")
 
+# indices
+# x := futures
+# y := filteredCurrent
+
 # difference between spot and futures is in finance called "basis"
 futCur["diffOpenXY"] = diffCol(futCur,'open_x','open_y')
 futCur["diffCloseXY"] = diffCol(futCur,'close_x','close_y')
+
+
+futCur["ratioDiffXY"] = divCol(futCur,'diffOpenXY','diffCloseXY')
 
 # rate of chagne
 futCur["diffOpenCloseX"] = diffCol(futCur,'open_x','close_x')
 futCur["diffOpenCloseY"] = diffCol(futCur,'open_y','close_y')
 
-futCur["ratioDiffOpenClose"] = divCol(futCur,'diffOpenCloseX','close_y')
+futCur["ratioDiffOpenClose"] = divCol(futCur,'diffOpenCloseX','diffOpenCloseY')
 
 def main():
     ax = plt.gca()
 
-    futCur.plot(kind='scatter',x='date',y='ratioDiffOpenClose',ax=ax,s=1)
+
+    futCur.plot(kind='scatter',x='date',y='ratioDiffXY',ax=ax,s=1)
+    # futCur.plot(kind='scatter',x='date',y='ratioDiffOpenClose',ax=ax,s=1)
 
     # futCur.plot(kind='scatter',x='date',y='diffOpenXY',ax=ax)
     # futCur.plot(kind='scatter',x='date',y='diffCloseXY', color='red', ax=ax)
