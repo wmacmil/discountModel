@@ -27,62 +27,46 @@ testTestValid = np.all(np.array([False,True])) == False
 def diffCol(d,x,y):
     return d[x] - d[y]
 
-# too bad these aren't actual indexes
-openCloseDiff = lambda d: diffCol(d,'open','close')
-highLowDiff = lambda d: diffCol(d,'high','low')
+def divCol(d,x,y):
+    return d[x] / d[y]
 
-currentStartStop = openCloseDiff(filteredCurrent)
-futuresStartStop = openCloseDiff(futures)
 
 # merge the tables, now x and y parameters
 futCur = pd.merge(futures, filteredCurrent , on="date")
 
-# diff1  = diffCol(futCur,'open_x','open_y')
-
+# difference between spot and futures is in finance called "basis"
 futCur["diffOpenXY"] = diffCol(futCur,'open_x','open_y')
 futCur["diffCloseXY"] = diffCol(futCur,'close_x','close_y')
 
+# rate of chagne
 futCur["diffOpenCloseX"] = diffCol(futCur,'open_x','close_x')
 futCur["diffOpenCloseY"] = diffCol(futCur,'open_y','close_y')
 
-# futCurDif = 
+futCur["ratioDiffOpenClose"] = divCol(futCur,'diffOpenCloseX','close_y')
 
-# df3.plot(x="open_x", y="B")
+def main():
+    ax = plt.gca()
 
-ax = plt.gca()
+    futCur.plot(kind='scatter',x='date',y='ratioDiffOpenClose',ax=ax,s=1)
 
-# futCur.plot(kind='scatter',x='date',y='diffOpenXY',ax=ax)
-# futCur.plot(kind='scatter',x='date',y='diffCloseXY', color='red', ax=ax)
+    # futCur.plot(kind='scatter',x='date',y='diffOpenXY',ax=ax)
+    # futCur.plot(kind='scatter',x='date',y='diffCloseXY', color='red', ax=ax)
 
-futCur.plot(kind='scatter',x='date',y='diffOpenCloseX',ax=ax)
-futCur.plot(kind='scatter',x='date',y='diffOpenCloseY',color='red', ax=ax)
+    # # ok, could normalize
+    # futCur.plot(kind='scatter',x='date',y='diffOpenCloseX',ax=ax,s=1)
+    # futCur.plot(kind='scatter',x='date',y='diffOpenCloseY',color='red', ax=ax,s=1)
 
-# futCur.plot(kind='scatter',x='date',y='open_x',ax=ax)
-# futCur.plot(kind='scatter',x='date',y='open_y', color='red', ax=ax)
+    # futCur.plot(kind='scatter',x='date',y='open_x',ax=ax)
+    # futCur.plot(kind='scatter',x='date',y='open_y', color='red', ax=ax)
 
-
-# diff1.plot
-
-plt.show()
-
-# def main():
-#     ax = plt.gca()
-
-#     futCur.plot(kind='line',x='date',y='open_x',ax=ax)
-#     futCur.plot(kind='line',x='date',y='open_y', color='red', ax=ax)
-
-#     plt.show()
-
-# main()
-
-# >>> diffCol(result,'open_x','open_y')
-
-# example = currentStartStop / futuresStartStop --indexing issue
-
-# def diffCol(d,x,y):
-#     return d[x] - d[y]
-
-# def openClose(d):
-#     return lamba x : 
+    plt.show()
 
 
+main()
+
+# # independent of below merger of the two csvs in futCur
+# # too bad these aren't actual indexes
+# openCloseDiff = lambda d: diffCol(d,'open','close')
+# highLowDiff = lambda d: diffCol(d,'high','low')
+# currentStartStop = openCloseDiff(filteredCurrent)
+# futuresStartStop = openCloseDiff(futures)
