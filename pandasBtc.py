@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# current := spot
 # parse_dates gives pandas internal date representation
 futures = pd.read_csv('f.csv',parse_dates=['date'])
 current = pd.read_csv('c.csv',parse_dates=['date'])
@@ -15,10 +16,10 @@ def isInFutureDates(x):
         if x == y:
             return True
 
-filteredCurrent = current.loc[current['date'].isin(futuresDates)]
+filteredSpotrent = current.loc[current['date'].isin(futuresDates)]
 
 # tests
-testDates = np.all(futures.date.values == filteredCurrent.date.values) == True
+testDates = np.all(futures.date.values == filteredSpotrent.date.values) == True
 testTestValid = np.all(np.array([False,True])) == False
 
 # date,open,high,low,close,adjClose,volume
@@ -32,50 +33,64 @@ def divCol(d,x,y):
 
 
 # merge the tables, now x and y parameters
-futCur = pd.merge(futures, filteredCurrent , on="date")
+futSpot = pd.merge(futures, filteredSpotrent , on="date")
+
+
+# # difference between spot and futures is in finance called "basis"
+# futSpot["diffOpenXY"] = diffCol(futSpot,'open_x','open_y')
+# futSpot["diffCloseXY"] = diffCol(futSpot,'close_x','close_y')
+# futSpot["ratioDiffXY"] = divCol(futSpot,'diffOpenXY','diffCloseXY')
 
 # indices
 # x := futures
-# y := filteredCurrent
-
-# difference between spot and futures is in finance called "basis"
-futCur["diffOpenXY"] = diffCol(futCur,'open_x','open_y')
-futCur["diffCloseXY"] = diffCol(futCur,'close_x','close_y')
-
-
-futCur["ratioDiffXY"] = divCol(futCur,'diffOpenXY','diffCloseXY')
+# y := filteredSpotrent, e.g. filtered spot
 
 # rate of chagne
-futCur["diffOpenCloseX"] = diffCol(futCur,'open_x','close_x')
-futCur["diffOpenCloseY"] = diffCol(futCur,'open_y','close_y')
+futSpot["diffOpenCloseFut"] = diffCol(futSpot,'close_x','open_x') # delta p
+futSpot["diffOpenCloseSpot"] = diffCol(futSpot,'close_y','open_y') # delta q
 
-futCur["ratioDiffOpenClose"] = divCol(futCur,'diffOpenCloseX','diffOpenCloseY')
+# futSpot["ratioDiffOpenClose"] = divCol(futSpot,'diffOpenCloseX','diffOpenCloseY')
+
+# nomralized differences
+# delta p / p0
+# delta q / q0
+futSpot["normalizeDiffFut"] = divCol(futSpot,'diffOpenCloseFut','open_x')
+futSpot["normalizeDiffSpot"] = divCol(futSpot,'diffOpenCloseSpot','open_y')
+
+futSpot["ratioNormalizedFutSpot"] = divCol(futSpot,'normalizeDiffFut','normalizeDiffSpot')
+
 
 def main():
     ax = plt.gca()
 
+    futSpot.plot(kind='scatter',x='date',y='ratioNormalizedFutSpot',ax=ax,s=1)
 
-    futCur.plot(kind='scatter',x='date',y='ratioDiffXY',ax=ax,s=1)
-    # futCur.plot(kind='scatter',x='date',y='ratioDiffOpenClose',ax=ax,s=1)
-
-    # futCur.plot(kind='scatter',x='date',y='diffOpenXY',ax=ax)
-    # futCur.plot(kind='scatter',x='date',y='diffCloseXY', color='red', ax=ax)
-
-    # # ok, could normalize
-    # futCur.plot(kind='scatter',x='date',y='diffOpenCloseX',ax=ax,s=1)
-    # futCur.plot(kind='scatter',x='date',y='diffOpenCloseY',color='red', ax=ax,s=1)
-
-    # futCur.plot(kind='scatter',x='date',y='open_x',ax=ax)
-    # futCur.plot(kind='scatter',x='date',y='open_y', color='red', ax=ax)
+    # finding the outlier
+    # futSpot[futSpot.ratioNormalizedFutSpot == futSpot.ratioNormalizedFutSpot.min()]
 
     plt.show()
 
-
 main()
 
-# # independent of below merger of the two csvs in futCur
+# maybe delete
+
+    # futSpot.plot(kind='scatter',x='date',y='ratioDiffXY',ax=ax,s=1)
+    # futSpot.plot(kind='scatter',x='date',y='ratioDiffOpenClose',ax=ax,s=1)
+
+    # futSpot.plot(kind='scatter',x='date',y='diffOpenXY',ax=ax)
+    # futSpot.plot(kind='scatter',x='date',y='diffCloseXY', color='red', ax=ax)
+
+    # # ok, could normalize
+    # futSpot.plot(kind='scatter',x='date',y='diffOpenCloseX',ax=ax,s=1)
+    # futSpot.plot(kind='scatter',x='date',y='diffOpenCloseY',color='red', ax=ax,s=1)
+
+    # futSpot.plot(kind='scatter',x='date',y='open_x',ax=ax)
+    # futSpot.plot(kind='scatter',x='date',y='open_y', color='red', ax=ax)
+
+
+# # independent of below merger of the two csvs in futSpot
 # # too bad these aren't actual indexes
 # openCloseDiff = lambda d: diffCol(d,'open','close')
 # highLowDiff = lambda d: diffCol(d,'high','low')
-# currentStartStop = openCloseDiff(filteredCurrent)
+# currentStartStop = openCloseDiff(filteredSpotrent)
 # futuresStartStop = openCloseDiff(futures)
