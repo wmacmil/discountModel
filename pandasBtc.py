@@ -1,11 +1,18 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import stats
+from sklearn.linear_model import LinearRegression
+
 
 # current := spot
 # parse_dates gives pandas internal date representation
-futures = pd.read_csv('f.csv',parse_dates=['date'])
-current = pd.read_csv('c.csv',parse_dates=['date'])
+future = pd.read_csv('f.csv',parse_dates=['date'])
+curren = pd.read_csv('c.csv',parse_dates=['date'])
+
+# filtered nans
+futures = future[future.open.notnull()]
+current = curren[curren.open.notnull()]
 
 futuresDates = futures["date"]
 
@@ -18,12 +25,12 @@ def isInFutureDates(x):
 
 filteredSpotrent = current.loc[current['date'].isin(futuresDates)]
 
+
+# now the test fails? this is due to something i did with filtering the nans
+# basically, the subset assumption fails once we've filtered out nans
 # tests
 testDates = np.all(futures.date.values == filteredSpotrent.date.values) == True
 testTestValid = np.all(np.array([False,True])) == False
-
-# date,open,high,low,close,adjClose,volume
-# def diffPrice(x,y):
 
 def diffCol(d,x,y):
     return d[x] - d[y]
@@ -31,15 +38,9 @@ def diffCol(d,x,y):
 def divCol(d,x,y):
     return d[x] / d[y]
 
-
 # merge the tables, now x and y parameters
 futSpot = pd.merge(futures, filteredSpotrent , on="date")
 
-
-# # difference between spot and futures is in finance called "basis"
-# futSpot["diffOpenXY"] = diffCol(futSpot,'open_x','open_y')
-# futSpot["diffCloseXY"] = diffCol(futSpot,'close_x','close_y')
-# futSpot["ratioDiffXY"] = divCol(futSpot,'diffOpenXY','diffCloseXY')
 
 # indices
 # x := futures
@@ -59,20 +60,50 @@ futSpot["normalizeDiffSpot"] = divCol(futSpot,'diffOpenCloseSpot','open_y')
 
 futSpot["ratioNormalizedFutSpot"] = divCol(futSpot,'normalizeDiffFut','normalizeDiffSpot')
 
+# finding the outlier
+# futSpot[futSpot.ratioNormalizedFutSpot == futSpot.ratioNormalizedFutSpot.min()].index == 783
+
+# probably a better way to do this than to work with nanoSec
+futSpot['numDate'] = pd.to_numeric(futSpot.date)
+
+futSpotMinusOutlier = futSpot.drop(
+    labels=[783],
+    axis=0
+    )
+
+# xdates = futSpotMinusOutlier.numDate.values
+
+# this invalidates the data as there are missed dates, but we compromise for
+# the time being
+
+# problem here
+# futSpot.isnull().open_x.any() == True
+
+xdates = futSpotMinusOutlier.numDate.values
+yratio = futSpotMinusOutlier.ratioNormalizedFutSpot.values
+# issue here with the nan
+res = stats.linregress(xdates,yratio)
+
+# stuff = stats.linregress(futSpot['date'],futSpot['ratioNormalizedFutSpot'])
+
+# slope, intercept, r, p, se = stats.linregress(futSpot['date'],futSpot['ratioNormalizedFutSpot'])
 
 def main():
     ax = plt.gca()
 
     futSpot.plot(kind='scatter',x='date',y='ratioNormalizedFutSpot',ax=ax,s=1)
-
-    # finding the outlier
-    # futSpot[futSpot.ratioNormalizedFutSpot == futSpot.ratioNormalizedFutSpot.min()]
+    # futSpotMinusOutlier.plot(kind='scatter',x='date',y='ratioNormalizedFutSpot',ax=ax,s=1)
 
     plt.show()
 
-main()
+# main()
 
-# maybe delete
+# maybe delete below this line
+
+# # difference between spot and futures is in finance called "basis"
+# futSpot["diffOpenXY"] = diffCol(futSpot,'open_x','open_y')
+# futSpot["diffCloseXY"] = diffCol(futSpot,'close_x','close_y')
+# futSpot["ratioDiffXY"] = divCol(futSpot,'diffOpenXY','diffCloseXY')
 
     # futSpot.plot(kind='scatter',x='date',y='ratioDiffXY',ax=ax,s=1)
     # futSpot.plot(kind='scatter',x='date',y='ratioDiffOpenClose',ax=ax,s=1)
